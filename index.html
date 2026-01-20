@@ -10,46 +10,46 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --ios-blue: #007AFF; --ios-green: #34C759; --ios-orange: #FF9500; --ios-red: #FF3B30; --ios-bg: #F2F2F7; }
-        body { font-family: -apple-system, sans-serif; background: var(--ios-bg); margin: 0; padding: 15px; padding-bottom: 50px; color: #1C1C1E; }
-        .card { background: white; border-radius: 15px; padding: 18px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .user-header { background: var(--ios-blue); color: white; padding: 20px; border-radius: 15px; margin-bottom: 15px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
-        input { border: 1px solid #D1D1D6; border-radius: 10px; padding: 12px; font-size: 16px; width: 100%; box-sizing: border-box; background: #FFF; }
-        button { border: none; border-radius: 12px; padding: 14px; font-weight: bold; cursor: pointer; color: white; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--ios-bg); margin: 0; padding: 15px; padding-bottom: 60px; color: #1C1C1E; }
+        .card { background: white; border-radius: 18px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .user-header { background: linear-gradient(135deg, var(--ios-blue), #0056b3); color: white; padding: 22px; border-radius: 18px; margin-bottom: 15px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        input { border: 1.5px solid #E5E5EA; border-radius: 12px; padding: 14px; font-size: 16px; width: 100%; box-sizing: border-box; background: #FAFAFA; }
+        button { border: none; border-radius: 14px; padding: 14px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; }
+        button:active { transform: scale(0.98); opacity: 0.8; }
         .summary-row { display: flex; justify-content: space-around; text-align: center; }
-        .summary-item b { font-size: 22px; display: block; color: var(--ios-blue); }
-        .status-area { text-align: center; margin-top: 15px; border-top: 1px solid #EEE; padding-top: 10px; }
+        .summary-item b { font-size: 24px; display: block; color: var(--ios-blue); }
+        .status-area { text-align: center; margin-top: 15px; border-top: 1px solid #F2F2F7; padding-top: 15px; }
         .chart-container { height: 200px; margin-top: 10px; }
-        .log-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 0.5px solid #EEE; font-size: 15px; }
-        .alarm-item { display: flex; justify-content: space-between; align-items: center; background: #F2F2F7; padding: 10px; border-radius: 10px; margin-bottom: 5px; }
-        .notif-banner { background: #5856D6; color: white; padding: 15px; border-radius: 15px; margin-bottom: 15px; text-align: center; }
-        h2 { font-size: 16px; margin: 0 0 10px 0; color: #3A3A3C; }
+        .alarm-item { display: flex; justify-content: space-between; align-items: center; background: #F2F2F7; padding: 12px; border-radius: 12px; margin-bottom: 8px; }
+        .notif-banner { background: #5856D6; color: white; padding: 18px; border-radius: 18px; margin-bottom: 15px; text-align: center; }
+        h2 { font-size: 18px; margin: 0 0 12px 0; font-weight: 700; }
     </style>
 </head>
 <body>
 
     <div class="user-header">
-        <h2 style="color:white; margin-bottom:12px;">👤 帳號：<span id="curUser">訪客</span></h2>
+        <h2 style="color:white; margin-bottom:15px;">👤 帳號：<span id="curUser">訪客</span></h2>
         <div class="grid" style="grid-template-columns: 2.5fr 1fr;">
             <input type="text" id="accInput" placeholder="切換名稱">
-            <button style="background:rgba(255,255,255,0.3);" onclick="switchUser()">切換</button>
+            <button style="background:rgba(255,255,255,0.25);" onclick="switchUser()">切換</button>
         </div>
     </div>
 
     <div id="notifPrompt" class="notif-banner">
-        🔔 欲接收橫幅通知，請先開啟權限
-        <button style="background: white; color: #5856D6; margin-top: 10px; width: 100%; font-size: 14px;" onclick="enableNotifications()">開啟系統通知</button>
+        🔔 開啟「智慧總結通知」<br><small>時間到將自動計算週/月進度</small>
+        <button style="background: white; color: #5856D6; margin-top: 12px; width: 100%;" onclick="enableNotifications()">啟動系統通知</button>
     </div>
 
     <div class="card">
         <div class="summary-row">
             <div class="summary-item"><small>目標</small><b id="targetVal">--</b></div>
-            <div class="summary-item"><small>淨攝取</small><b id="intakeVal">--</b></div>
+            <div class="summary-item"><small>今日攝取</small><b id="intakeVal">--</b></div>
             <div class="summary-item"><small>剩餘</small><b id="remVal">--</b></div>
         </div>
         <div class="status-area">
-            <div id="statusIcon" style="font-size:45px;">🌱</div>
-            <div id="statusLabel" style="font-weight:bold;">輸入個人數據開始</div>
+            <div id="statusIcon" style="font-size:50px;">🌱</div>
+            <div id="statusLabel" style="font-weight:700;">設定身體數據開始紀錄</div>
         </div>
     </div>
 
@@ -64,10 +64,10 @@
     </div>
 
     <div class="card">
-        <h2>⏰ 多時段提醒</h2>
+        <h2>⏰ 多時段智慧提醒</h2>
         <div class="grid" style="grid-template-columns: 2fr 1fr;">
             <input type="time" id="newAlarm">
-            <button style="background: var(--ios-orange);" onclick="addAlarm()">＋新增</button>
+            <button style="background: var(--ios-orange);" onclick="addAlarm()">＋新增鬧鐘</button>
         </div>
         <div id="alarmList" style="margin-top:10px;"></div>
     </div>
@@ -77,16 +77,16 @@
         <div class="chart-container"><canvas id="myChart"></canvas></div>
     </div>
 
-    <div class="card" style="border-left: 6px solid var(--ios-green);">
+    <div class="card" style="border-top: 6px solid var(--ios-green);">
         <h2>🍎 飲食紀錄</h2>
-        <div class="grid" style="grid-template-columns: 2fr 1fr;"><input type="text" id="fn" placeholder="食物內容"><input type="number" id="fc" placeholder="熱量"></div>
-        <button style="background:var(--ios-green);" onclick="addEntry('food')">新增飲食</button>
+        <div class="grid" style="grid-template-columns: 2fr 1fr;"><input type="text" id="fn" placeholder="食物"><input type="number" id="fc" placeholder="大卡"></div>
+        <button style="background:var(--ios-green); width:100%;" onclick="addEntry('food')">新增飲食</button>
     </div>
 
-    <div class="card" style="border-left: 6px solid var(--ios-orange);">
-        <h2>🏃‍♂️ 運動辨識</h2>
-        <div class="grid" style="grid-template-columns: 2fr 1fr;"><input type="text" id="en" placeholder="運動(如:快走)"><input type="number" id="em" placeholder="分鐘"></div>
-        <button style="background:var(--ios-orange);" onclick="addEntry('ex')">計算消耗</button>
+    <div class="card" style="border-top: 6px solid var(--ios-orange);">
+        <h2>🏃‍♂️ 運動消耗</h2>
+        <div class="grid" style="grid-template-columns: 2fr 1fr;"><input type="text" id="en" placeholder="運動"><input type="number" id="em" placeholder="分鐘"></div>
+        <button style="background:var(--ios-orange); width:100%;" onclick="addEntry('ex')">計算消耗</button>
     </div>
 
     <div class="card"><h2>📋 今日紀錄</h2><div id="logList"></div></div>
@@ -134,10 +134,9 @@
             db.h = parseFloat(document.getElementById('h').value);
             db.w = parseFloat(document.getElementById('w').value);
             db.a = parseInt(document.getElementById('a').value);
-            // 基礎 TDEE 計算 (Mifflin-St Jeor 公式)
             db.tdee = Math.round((10 * db.w + 6.25 * db.h - 5 * db.a + 5) * 1.2);
             save();
-            alert("身體數據已更新！目標熱量：" + db.tdee);
+            alert("數據已同步！");
         }
 
         function addAlarm() {
@@ -154,31 +153,60 @@
 
         function renderAlarms() {
             document.getElementById('alarmList').innerHTML = (db.alarms || []).map((t, i) => `
-                <div class="alarm-item"><span>🔔 ${t}</span><button style="background:var(--ios-red); padding:5px 10px; font-size:12px; border-radius:8px;" onclick="deleteAlarm(${i})">刪除</button></div>
+                <div class="alarm-item"><span>🔔 ${t}</span><button style="background:var(--ios-red); padding:6px 12px; border-radius:10px;" onclick="deleteAlarm(${i})">刪除</button></div>
             `).join('');
+        }
+
+        // --- 核心升級：智慧總結通知 ---
+        function getSummary(days) {
+            let total = 0;
+            let count = 0;
+            for(let i=0; i<days; i++) {
+                const d = getD(i);
+                const daySum = (db.history[d] || []).reduce((s,l)=>s+l.c, 0);
+                if(daySum > 0) {
+                    total += daySum;
+                    count++;
+                }
+            }
+            const avg = count > 0 ? Math.round(total / count) : 0;
+            const status = avg > db.tdee ? "⚠ 超標" : "✅ 正常";
+            return { avg, status };
         }
 
         function checkAlarms() {
             const now = new Date();
             const curTime = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
             if ((db.alarms || []).includes(curTime)) {
-                sendPush(`嗨 ${user}，紀錄時間到了！`, `現在是 ${curTime}，快來填寫飲食紀錄吧。`);
+                const week = getSummary(7);
+                const month = getSummary(30);
+                
+                const title = `嗨 ${user}，紀錄時間到囉！`;
+                const body = `今日剩餘：${document.getElementById('remVal').innerText} kcal\n` +
+                             `📅 本週平均：${week.avg} (${week.status})\n` +
+                             `📊 本月平均：${month.avg} (${month.status})`;
+                
+                sendPush(title, body);
             }
         }
 
         function sendPush(title, body) {
             if (Notification.permission === "granted") {
                 navigator.serviceWorker.ready.then(reg => {
-                    reg.showNotification(title, { body: body, icon: 'https://cdn-icons-png.flaticon.com/512/2424/2424742.png' });
+                    reg.showNotification(title, { 
+                        body: body, 
+                        icon: 'https://cdn-icons-png.flaticon.com/512/2424/2424742.png',
+                        badge: 'https://cdn-icons-png.flaticon.com/512/2424/2424742.png'
+                    });
                 });
-            } else { alert("⏰ " + title + "\n" + body); }
+            } else { alert(title + "\n" + body); }
         }
 
         function enableNotifications() {
             Notification.requestPermission().then(p => {
                 if(p === "granted") {
                     document.getElementById('notifPrompt').style.display = 'none';
-                    sendPush("通知測試", "系統提醒功能已成功開啟！");
+                    sendPush("通知啟動成功", "時間到時，我會直接把週、月結算報告傳給你！");
                 }
             });
         }
@@ -220,7 +248,7 @@
             }
             document.getElementById('statusIcon').innerText=icon;
             document.getElementById('statusLabel').innerText=txt;
-            document.getElementById('logList').innerHTML = logs.map(l=>`<div class="log-item"><span>${l.n}</span><b>${l.c>0?'+':''}${l.c}</b></div>`).reverse().join('');
+            document.getElementById('logList').innerHTML = logs.map(l=>`<div class="log-item"><span>${l.n}</span><b style="color:${l.c>0?'var(--ios-red)':'var(--ios-blue)'}">${l.c>0?'+':''}${l.c}</b></div>`).reverse().join('');
             renderChart(7);
         }
 
@@ -234,8 +262,8 @@
             if(chart) chart.destroy();
             chart = new Chart(document.getElementById('myChart'), {
                 type: 'line',
-                data: { labels, datasets: [{ label:'熱量', data:vals, borderColor:'#007AFF', tension:0.3, fill:true, backgroundColor:'rgba(0,122,255,0.05)' }] },
-                options: { responsive:true, maintainAspectRatio:false, scales:{y:{beginAtZero:true}} }
+                data: { labels, datasets: [{ label:'熱量趨勢', data:vals, borderColor:'#007AFF', tension:0.4, fill:true, backgroundColor:'rgba(0,122,255,0.1)' }] },
+                options: { responsive:true, maintainAspectRatio:false }
             });
         }
     </script>
