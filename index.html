@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>熱量助手 Pro</title>
+    <style>
+        :root { --ios-blue: #007AFF; --ios-green: #34C759; --ios-orange: #FF9500; --ios-red: #FF3B30; --ios-bg: #F2F2F7; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--ios-bg); margin: 0; padding: 15px; color: #1C1C1E; -webkit-tap-highlight-color: transparent; }
+        .card { background: white; border-radius: 15px; padding: 18px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        h2 { font-size: 17px; margin: 0 0 12px 0; display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        input, select { border: 1.5px solid #E5E5EA; border-radius: 10px; padding: 12px; font-size: 16px; width: 100%; box-sizing: border-box; background: #F9F9F9; }
+        input:focus { border-color: var(--ios-blue); outline: none; background: #FFF; }
+        button { border: none; border-radius: 12px; padding: 14px; font-size: 16px; font-weight: bold; width: 100%; cursor: pointer; color: white; active-opacity: 0.7; }
+        .summary-row { display: flex; justify-content: space-around; text-align: center; padding: 10px 0; }
+        .summary-item b { font-size: 24px; display: block; color: var(--ios-blue); }
+        .status-box { text-align: center; padding: 15px; font-size: 50px; }
+        .status-text { font-size: 15px; font-weight: 600; text-align: center; margin-bottom: 10px; }
+        .log-item { display: flex; justify-content: space-between; padding: 12px 5px; border-bottom: 0.5px solid #EEE; font-size: 15px; }
+        .cal-pos { color: var(--ios-red); }
+        .cal-neg { color: var(--ios-blue); }
+        .user-section { background: linear-gradient(135deg, #007AFF, #0056b3); color: white; padding: 20px; border-radius: 15px; margin-bottom: 15px; }
+        .user-section h2 { color: white; }
+    </style>
+</head>
+<body>
+
+    <div class="user-section">
+        <h2>👤 帳號：<span id="currentUserDisplay">訪客</span></h2>
+        <div class="grid" style="grid-template-columns: 2fr 1fr;">
+            <input type="text" id="accountInput" placeholder="輸入名稱">
+            <button style="background: rgba(255,255,255,0.2); border: 1px solid white;" onclick="switchUser()">登入</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="summary-row">
+            <div class="summary-item"><small>目標</small><b id="targetVal">--</b></div>
+            <div class="summary-item"><small>淨攝取</small><b id="intakeVal">--</b></div>
+            <div class="summary-item"><small>剩餘</small><b id="remVal">--</b></div>
+        </div>
+        <div id="statusIcon" class="status-box">🌱</div>
+        <div id="statusLabel" class="status-text">今天還沒開始紀錄喔！</div>
+    </div>
+
+    <div class="card">
+        <h2>⚙️ 設定</h2>
+        <div class="grid">
+            <input type="number" id="h" placeholder="身高 cm">
+            <input type="number" id="w" placeholder="體重 kg">
+            <input type="number" id="a" placeholder="年齡">
+            <input type="time" id="t" title="提醒時間">
+        </div>
+        <button style="background: var(--ios-blue);" onclick="saveProfile()">更新數據</button>
+    </div>
+
+    <div class="card" style="border-top: 5px solid var(--ios-green);">
+        <h2>🍎 飲食紀錄</h2>
+        <div class="grid" style="grid-template-columns: 2fr 1fr;">
+            <input type="text" id="fname" placeholder="食物內容">
+            <input type="number" id="fcal" placeholder="熱量">
+        </div>
+        <button style="background: var(--ios-green);" onclick="addLog('food')">新增飲食</button>
+    </div>
+
+    <div class="card" style="border-top: 5px solid var(--ios-orange);">
+        <h2>🏃‍♂️ 運動辨識</h2>
+        <div class="grid" style="grid-template-columns: 2fr 1fr;">
+            <input type="text" id="exName" placeholder="運動(如:快走)">
+            <input type="number" id="exMin" placeholder="分鐘">
+        </div>
+        <button style="background: var(--ios-orange);" onclick="addLog('ex')">計算消耗</button>
+    </div>
+
+    <div class="card">
+        <h2>📋 今日紀錄</h2>
+        <div id="logList"></div>
+        <button onclick="clearAll()" style="background:#8E8E93; margin-top:20px; font-size:13px;">清除帳號所有紀錄</button>
+    </div>
+
+    <script>
+        let currentUser = localStorage.getItem('lastUser') || 'Guest';
+        let allUsersData = JSON.parse(localStorage.getItem('multiUserData')) || {};
+
+        if (!allUsersData[currentUser]) {
+            allUsersData[currentUser] = { h:170, w:60, a:25, t:"21:00", logs: [], tdee: 2000 };
+        }
+        let db = allUsersData[currentUser];
+
+        window.onload = function() {
+            loadUserData();
+            setInterval(checkNotif, 60000);
+        };
+
+        function switchUser() {
+            const newUser = document.getElementById('accountInput').value.trim();
+            if (!newUser) return;
+            allUsersData[currentUser] = db;
+            currentUser = newUser;
+            localStorage.setItem('lastUser', currentUser);
+            if (!allUsersData[currentUser]) {
+                allUsersData[currentUser] = { h:170, w:60, a:25, t:"21:00", logs: [], tdee: 2000 };
+            }
+            db = allUsersData[currentUser];
+            document.getElementById('accountInput').value = '';
+            loadUserData();
+        }
+
+        function loadUserData() {
+            document.getElementById('currentUserDisplay').innerText = currentUser;
+            document.getElementById('h').value = db.h || '';
+            document.getElementById('w').value = db.w || '';
+            document.getElementById('a').value = db.a || '';
+            document.getElementById('t').value = db.t || '21:00';
+            render();
+        }
+
+        function saveProfile() {
+            db.h = document.getElementById('h').value;
+            db.w = document.getElementById('w').value;
+            db.a = document.getElementById('a').value;
+            db.t = document.getElementById('t').value;
+            db.tdee = Math.round((10 * db.w + 6.25 * db.h - 5 * db.a + 5) * 1.2);
+            save();
+            alert("設定已儲存");
+        }
+
+        function addLog(type) {
+            let n, c;
+            if(type === 'food') {
+                n = document.getElementById('fname').value;
+                c = parseInt(document.getElementById('fcal').value);
+                document.getElementById('fname').value = '';
+                document.getElementById('fcal').value = '';
+            } else {
+                let name = document.getElementById('exName').value;
+                let min = parseFloat(document.getElementById('exMin').value);
+                if(!name || !min) return;
+                let met = 4.0;
+                if(name.includes("跑")) met = 8.5;
+                else if(name.includes("走")) met = 3.5;
+                else if(name.includes("籃") || name.includes("足")) met = 8.0;
+                n = name + "(" + min + "分)";
+                c = -Math.round(met * db.w * (min / 60));
+                document.getElementById('exName').value = '';
+                document.getElementById('exMin').value = '';
+            }
+            if(n && !isNaN(c)) {
+                db.logs.push({ n, c });
+                save();
+            }
+        }
+
+        function save() {
+            allUsersData[currentUser] = db;
+            localStorage.setItem('multiUserData', JSON.stringify(allUsersData));
+            render();
+        }
+
+        function render() {
+            const tdee = db.tdee || 2000;
+            const intake = db.logs.reduce((s, i) => s + i.c, 0);
+            const rem = tdee - intake;
+            
+            document.getElementById('targetVal').innerText = tdee;
+            document.getElementById('intakeVal').innerText = intake;
+            document.getElementById('remVal').innerText = rem;
+
+            let icon = "🌱", label = "開始今天的健康之旅！", color = "#8E8E93";
+            if(db.logs.length > 0) {
+                if(rem >= 300) { icon = "🌳"; label = "太棒了！你的森林非常茂盛！"; color = "var(--ios-green)"; }
+                else if(rem >= 0) { icon = "🍎"; label = "成功達標！果實結得很好！"; color = "var(--ios-orange)"; }
+                else { icon = "💀"; label = "熱量超標！明天再加油！"; color = "var(--ios-red)"; }
+            }
+            document.getElementById('statusIcon').innerText = icon;
+            document.getElementById('statusLabel').innerText = label;
+            document.getElementById('statusLabel').style.color = color;
+
+            document.getElementById('logList').innerHTML = db.logs.map(i => `
+                <div class="log-item"><span>${i.n}</span><b class="${i.c > 0 ? 'cal-pos' : 'cal-neg'}">${i.c > 0 ? '+' : ''}${i.c}</b></div>
+            `).reverse().join('');
+        }
+
+        function checkNotif() {
+            const cur = new Date().getHours().toString().padStart(2, '0') + ":" + new Date().getMinutes().toString().padStart(2, '0');
+            if(cur === db.t && db.logs.length === 0) alert("⏰ 嗨 " + currentUser + "，記得紀錄今天的熱量喔！");
+        }
+
+        function clearAll() { if(confirm("確定清除紀錄？")) { db.logs = []; save(); } }
+    </script>
+</body>
+</html>
