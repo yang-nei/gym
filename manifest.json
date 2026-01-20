@@ -1,0 +1,15 @@
+{
+  "name": "熱量助手 Pro",
+  "short_name": "熱量助手",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#F2F2F7",
+  "theme_color": "#007AFF",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2424/2424742.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

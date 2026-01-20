@@ -4,34 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
     <title>熱量助手 Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --ios-blue: #007AFF; --ios-green: #34C759; --ios-orange: #FF9500; --ios-red: #FF3B30; --ios-bg: #F2F2F7; }
-        body { font-family: -apple-system, sans-serif; background: var(--ios-bg); margin: 0; padding: 15px; padding-bottom: 50px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--ios-bg); margin: 0; padding: 15px; padding-bottom: 80px; }
         .card { background: white; border-radius: 15px; padding: 18px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .user-header { background: var(--ios-blue); color: white; padding: 15px; border-radius: 15px; margin-bottom: 15px; }
+        .user-header { background: var(--ios-blue); color: white; padding: 20px; border-radius: 15px; margin-bottom: 15px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
-        input, select { border: 1px solid #D1D1D6; border-radius: 8px; padding: 10px; font-size: 15px; width: 100%; box-sizing: border-box; }
-        button { border: none; border-radius: 10px; padding: 12px; font-weight: bold; cursor: pointer; color: white; }
+        input, select { border: 1px solid #D1D1D6; border-radius: 10px; padding: 12px; font-size: 16px; width: 100%; box-sizing: border-box; }
+        button { border: none; border-radius: 12px; padding: 14px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; }
+        button:active { opacity: 0.7; }
         .summary-row { display: flex; justify-content: space-around; text-align: center; }
-        .summary-item b { font-size: 20px; display: block; color: var(--ios-blue); }
+        .summary-item b { font-size: 22px; display: block; color: var(--ios-blue); }
         .status-area { text-align: center; padding: 10px; border-top: 1px solid #F2F2F7; margin-top: 10px; }
         .chart-container { height: 200px; margin-top: 10px; }
         .tabs { display: flex; gap: 5px; margin-bottom: 10px; }
-        .tab-btn { flex: 1; background: #DDD; color: #666; padding: 8px; border-radius: 8px; font-size: 13px; text-align: center; cursor: pointer; }
+        .tab-btn { flex: 1; background: #DDD; color: #666; padding: 10px; border-radius: 10px; font-size: 14px; text-align: center; }
         .tab-btn.active { background: var(--ios-blue); color: white; }
-        .log-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 0.5px solid #EEE; font-size: 14px; }
+        .log-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 0.5px solid #EEE; font-size: 15px; }
+        .notif-btn { background: #5856D6; width: 100%; margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <div class="user-header">
-        <h2 style="margin:0 0 10px 0; font-size:18px;">👤 帳號：<span id="curUser">訪客</span></h2>
+        <h2 style="margin:0 0 10px 0; font-size:20px;">👤 帳號：<span id="curUser">訪客</span></h2>
         <div class="grid" style="grid-template-columns: 2fr 1fr;">
-            <input type="text" id="accInput" placeholder="切換帳號名稱">
+            <input type="text" id="accInput" placeholder="輸入名稱">
             <button style="background:rgba(255,255,255,0.3);" onclick="switchUser()">切換</button>
         </div>
+        <button class="notif-btn" onclick="enableNotifications()">🔔 開啟系統級提醒通知</button>
     </div>
 
     <div class="card">
@@ -41,13 +46,13 @@
             <div class="summary-item"><small>剩餘</small><b id="remVal">--</b></div>
         </div>
         <div class="status-area">
-            <div id="statusIcon" style="font-size:40px;">🌱</div>
-            <div id="statusLabel" style="font-size:14px; font-weight:bold;">開始紀錄吧！</div>
+            <div id="statusIcon" style="font-size:45px;">🌱</div>
+            <div id="statusLabel" style="font-size:15px; font-weight:bold;">設定數據並開始紀錄</div>
         </div>
     </div>
 
     <div class="card">
-        <h2>📊 數據總結</h2>
+        <h2 style="font-size:16px;">📊 數據總結</h2>
         <div class="tabs">
             <div class="tab-btn active" id="t7" onclick="renderChart(7)">週統計</div>
             <div class="tab-btn" id="t30" onclick="renderChart(30)">月總結</div>
@@ -58,30 +63,30 @@
     </div>
 
     <div class="card">
-        <h2>⚙️ 個人設定與提醒</h2>
+        <h2 style="font-size:16px;">⚙️ 個人設定</h2>
         <div class="grid">
             <input type="number" id="h" placeholder="身高 cm">
             <input type="number" id="w" placeholder="體重 kg">
             <input type="number" id="a" placeholder="年齡">
-            <input type="time" id="tm" title="每日提醒時間">
+            <input type="time" id="tm" title="提醒時間">
         </div>
-        <button style="background:var(--ios-blue);" onclick="updateProfile()">更新設定</button>
+        <button style="background:var(--ios-blue);" onclick="updateProfile()">儲存數據</button>
     </div>
 
-    <div class="card" style="border-left: 5px solid var(--ios-green);">
-        <h2>🍎 飲食</h2>
-        <div class="grid" style="grid-template-columns: 2fr 1fr;"><input type="text" id="fn" placeholder="食物"><input type="number" id="fc" placeholder="大卡"></div>
+    <div class="card" style="border-left: 6px solid var(--ios-green);">
+        <h2 style="font-size:16px;">🍎 飲食紀錄</h2>
+        <div class="grid" style="grid-template-columns: 2fr 1fr;"><input type="text" id="fn" placeholder="食物名稱"><input type="number" id="fc" placeholder="熱量"></div>
         <button style="background:var(--ios-green);" onclick="addEntry('food')">新增飲食</button>
     </div>
 
-    <div class="card" style="border-left: 5px solid var(--ios-orange);">
-        <h2>🏃‍♂️ 運動</h2>
-        <div class="grid" style="grid-template-columns: 2fr 1fr;"><input type="text" id="en" placeholder="運動"><input type="number" id="em" placeholder="分鐘"></div>
+    <div class="card" style="border-left: 6px solid var(--ios-orange);">
+        <h2 style="font-size:16px;">🏃‍♂️ 智慧運動</h2>
+        <div class="grid" style="grid-template-columns: 2fr 1fr;"><input type="text" id="en" placeholder="運動內容"><input type="number" id="em" placeholder="分鐘"></div>
         <button style="background:var(--ios-orange);" onclick="addEntry('ex')">計算消耗</button>
     </div>
 
     <div class="card">
-        <h2>📋 今日紀錄</h2>
+        <h2 style="font-size:16px;">📋 今日明細</h2>
         <div id="logList"></div>
     </div>
 
@@ -97,7 +102,14 @@
             return d.toISOString().split('T')[0];
         };
 
-        window.onload = () => { loadUser(); setInterval(checkAlarm, 60000); };
+        window.onload = () => { 
+            loadUser(); 
+            // 註冊 Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('service-worker.js').then(() => console.log("SW Registered"));
+            }
+            setInterval(checkAlarm, 60000); 
+        };
 
         function switchUser() {
             const n = document.getElementById('accInput').value.trim();
@@ -112,10 +124,10 @@
 
         function loadUser() {
             document.getElementById('curUser').innerText = user;
-            document.getElementById('h').value = db.h;
-            document.getElementById('w').value = db.w;
-            document.getElementById('a').value = db.a;
-            document.getElementById('tm').value = db.tm;
+            document.getElementById('h').value = db.h || '';
+            document.getElementById('w').value = db.w || '';
+            document.getElementById('a').value = db.a || '';
+            document.getElementById('tm').value = db.tm || '21:00';
             refresh();
         }
 
@@ -126,6 +138,7 @@
             db.tm = document.getElementById('tm').value;
             db.tdee = Math.round((10*db.w + 6.25*db.h - 5*db.a + 5) * 1.2);
             save();
+            alert("數據已同步");
         }
 
         function addEntry(type) {
@@ -138,7 +151,7 @@
             } else {
                 const n=document.getElementById('en').value, m=parseInt(document.getElementById('em').value);
                 if(n && m) {
-                    const met = n.includes("跑")?8.5:n.includes("走")?3.5:4.5;
+                    const met = n.includes("跑")?8.5:n.includes("走")?3.5:n.includes("籃")?8.0:4.5;
                     db.history[date].push({n:n+`(${m}分)`, c:-Math.round(met*db.w*(m/60))});
                 }
                 document.getElementById('en').value=''; document.getElementById('em').value='';
@@ -161,7 +174,7 @@
             if(logs.length>0) {
                 if(rem>300){icon="🌳"; txt="森林茂盛！";}
                 else if(rem>=0){icon="🍎"; txt="成果豐碩！";}
-                else {icon="💀"; txt="爆掉了！";}
+                else {icon="💀"; txt="太頹廢了！";}
             }
             document.getElementById('statusIcon').innerText=icon;
             document.getElementById('statusLabel').innerText=txt;
@@ -194,8 +207,30 @@
             const now = new Date();
             const cur = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
             if(cur === db.tm && (!db.history[getD()] || db.history[getD()].length===0)) {
-                alert("⏰ "+user+"，今天還沒紀錄熱量喔！");
+                if (Notification.permission === "granted") {
+                    navigator.serviceWorker.ready.then(reg => {
+                        reg.showNotification("熱量助手提醒", { body: `嗨 ${user}，時間到了！今天還沒紀錄熱量喔！`, icon: "https://cdn-icons-png.flaticon.com/512/2424/2424742.png" });
+                    });
+                } else {
+                    alert("⏰ " + user + "，記得紀錄熱量喔！");
+                }
             }
+        }
+
+        function enableNotifications() {
+            if (!("Notification" in window)) {
+                alert("此瀏覽器不支援系統通知");
+                return;
+            }
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    navigator.serviceWorker.ready.then(reg => {
+                        reg.showNotification("系統通知已啟動", { body: "時間到時我會在這裡提醒你。" });
+                    });
+                } else {
+                    alert("通知權限被拒絕，請至手機設定中開啟。");
+                }
+            });
         }
     </script>
 </body>
