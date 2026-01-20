@@ -1,14 +1,22 @@
-self.addEventListener('push', function(event) {
-    const data = event.data ? event.data.json() : { title: '提醒', body: '該紀錄熱量囉！' };
+self.addEventListener('install', (event) => {
+    self.skipWaiting();
+});
+
+self.addEventListener('push', (event) => {
+    const data = event.data ? event.data.json() : { title: '提醒', body: '該紀錄囉！' };
     event.waitUntil(
         self.registration.showNotification(data.title, {
             body: data.body,
-            icon: 'https://cdn-icons-png.flaticon.com/512/2424/2424742.png'
+            icon: 'https://cdn-icons-png.flaticon.com/512/2424/2424742.png',
+            vibrate: [200, 100, 200]
         })
     );
 });
 
-// 為了讓 PWA 能離線運行，加入簡單的快取邏輯
-self.addEventListener('fetch', function(event) {
-    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+// 當點擊通知時打開 App
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    event.waitUntil(
+        clients.openWindow('/')
+    );
 });
