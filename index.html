@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>AI 旗艦助手 Pro</title>
+    <title>AI 健康助手旗艦版</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --ios-blue: #007AFF; --ios-green: #34C759; --ios-orange: #FF9500; --ios-red: #FF3B30; --ios-bg: #F2F2F7; --ai-purple: #5856D6; }
@@ -14,14 +14,15 @@
         .user-header { background: linear-gradient(135deg, var(--ios-blue), #0056b3); color: white; padding: 20px; border-radius: 18px; margin-bottom: 15px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         input, textarea { border: 1.5px solid #E5E5EA; border-radius: 12px; padding: 14px; font-size: 16px; width: 100%; box-sizing: border-box; }
-        button { border: none; border-radius: 14px; padding: 14px; font-weight: bold; cursor: pointer; color: white; }
+        button { border: none; border-radius: 14px; padding: 14px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; }
         .summary-row { display: flex; justify-content: space-around; text-align: center; }
         .summary-item b { font-size: 24px; display: block; color: var(--ios-blue); }
         .ai-btn { background: var(--ai-purple); width: 100%; }
         .ai-loading { color: var(--ai-purple); font-size: 13px; display: none; text-align: center; margin: 10px 0; font-weight: bold; }
         .log-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 0.5px solid #EEE; }
         #preview { width: 100%; border-radius: 12px; margin-top: 10px; display: none; }
-        .notif-banner { background: var(--ai-purple); color: white; padding: 15px; border-radius: 15px; margin-bottom: 15px; text-align: center; }
+        .notif-banner { background: var(--ai-purple); color: white; padding: 15px; border-radius: 15px; margin-bottom: 15px; text-align: center; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -29,66 +30,67 @@
     <div class="user-header">
         <h2 style="margin:0;">👤 <span id="curUser">訪客</span></h2>
         <div class="grid" style="grid-template-columns: 2fr 1fr; margin-top:10px;">
-            <input type="text" id="accInput" placeholder="切換名稱">
+            <input type="text" id="accInput" placeholder="切換帳號名稱">
             <button style="background:rgba(255,255,255,0.2);" onclick="switchUser()">切換</button>
         </div>
     </div>
 
     <div id="notifPrompt" class="notif-banner" onclick="enableEverything()">
-        🔔 點此授權「智慧通知」與「相機感應」
+        🔔 點此授權：啟動 AI 拍照、計步與智慧通知
     </div>
 
     <div class="card">
         <div class="summary-row">
-            <div class="summary-item"><small>目標</small><b id="targetVal">--</b></div>
-            <div class="summary-item"><small>今日攝取</small><b id="intakeVal">--</b></div>
+            <div class="summary-item"><small>今日目標</small><b id="targetVal">--</b></div>
+            <div class="summary-item"><small>攝取</small><b id="intakeVal">--</b></div>
             <div class="summary-item"><small>剩餘</small><b id="remVal">--</b></div>
         </div>
     </div>
 
     <div class="card" style="border: 2px solid var(--ai-purple);">
-        <h2 style="color: var(--ai-purple); margin:0 0 10px 0;">🪄 AI 智慧辨識 (拍照/文字)</h2>
-        <textarea id="aiInput" placeholder="輸入食物內容或直接點擊右側拍照..." rows="2"></textarea>
+        <h2 style="color: var(--ai-purple); margin:0 0 10px 0;">🪄 AI 智慧辨識 (文字/拍照)</h2>
+        <textarea id="aiInput" placeholder="輸入食物或點擊拍照..." rows="2"></textarea>
         <div class="grid" style="margin-top:10px;">
             <button class="ai-btn" onclick="askAI()">文字分析</button>
             <button class="ai-btn" style="background:var(--ios-green);" onclick="document.getElementById('imgIn').click()">📷 拍照辨識</button>
         </div>
         <input type="file" id="imgIn" accept="image/*" capture="environment" style="display:none;" onchange="analyzeImage(this)">
-        <div id="aiLoading" class="ai-loading">✨ Gemini 正在努力辨識中...</div>
+        <div id="aiLoading" class="ai-loading">✨ Gemini 正在分析並計算熱量...</div>
         <img id="preview">
     </div>
 
-    <div class="card" id="stepCard">
+    <div class="card">
         <h2>🏃 運動與即時計步</h2>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <div>
                 <div style="font-size: 32px; font-weight: bold;"><span id="liveSteps">0</span> 步</div>
-                <div style="color: var(--ios-blue); font-weight: 600;">距離: <span id="liveDist">0.00</span> km</div>
+                <div style="color: var(--ios-blue); font-weight: 600;">估計距離: <span id="liveDist">0.00</span> km</div>
             </div>
             <button id="stepBtn" style="background: var(--ios-blue); padding: 15px 25px;" onclick="togglePedometer()">開始計步</button>
         </div>
         <hr style="border: 0.5px solid #F2F2F7;">
         <div class="grid" style="grid-template-columns: 2fr 1fr; margin-top:10px;">
-            <input type="text" id="en" placeholder="運動(如:打球)">
+            <input type="text" id="en" placeholder="手動運動(如:重訓)">
             <input type="number" id="em" placeholder="分">
         </div>
-        <button style="background:var(--ios-orange); width:100%; margin-top:10px;" onclick="addEntry('ex')">新增手動運動</button>
+        <button style="background:var(--ios-orange); width:100%; margin-top:10px;" onclick="addEntry('ex')">新增運動消耗</button>
     </div>
 
     <div class="card">
-        <h2>⚙️ 身體設定</h2>
+        <h2>⚙️ 身體設定與報告設定</h2>
         <div class="grid">
             <input type="number" id="h" placeholder="身高 cm">
             <input type="number" id="w" placeholder="體重 kg">
             <input type="number" id="a" placeholder="年齡">
             <button style="background: var(--ios-blue); grid-column: span 2;" onclick="updateProfile()">儲存數據</button>
         </div>
+        <p style="font-size: 12px; color: #666; margin-top:10px;">* 通知預設於 12:00 與 19:00 發送週/月報</p>
     </div>
 
-    <div class="card"><h2>📋 今日紀錄</h2><div id="logList"></div></div>
+    <div class="card"><h2>📋 今日紀錄明細</h2><div id="logList"></div></div>
 
     <script>
-        // === [ 關鍵：填入你的 API KEY ] ===
+        // === [ 請填入你的 Gemini API KEY ] ===
         const API_KEY = "AIzaSyADqOezfr_Yz1RXVnxaKU5_Pi1IZP4NnX4";
 
         let user = localStorage.getItem('cal_user') || 'Guest';
@@ -104,43 +106,33 @@
 
         window.onload = () => { loadUser(); setInterval(checkAlarms, 60000); };
 
-        // --- AI 拍照辨識 ---
+        // --- AI 辨識系統 ---
         async function analyzeImage(input) {
             if (!input.files?.[0]) return;
             const file = input.files[0];
             const loader = document.getElementById('aiLoading');
             const preview = document.getElementById('preview');
-            
-            preview.src = URL.createObjectURL(file);
-            preview.style.display = "block";
-            loader.style.display = "block";
-
+            preview.src = URL.createObjectURL(file); preview.style.display = "block"; loader.style.display = "block";
             const base64 = await toBase64(file);
             const base64Data = base64.split(',')[1];
-
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{
-                            parts: [
-                                { text: "你是一位營養師。請觀察照片中食物，以 JSON 格式回傳估算熱量。格式：{\"cal\": 數字, \"desc\": \"食物名稱與份量(熱量)\"}" },
-                                { inline_data: { mime_type: file.type, data: base64Data } }
-                            ]
-                        }]
+                        contents: [{ parts: [
+                            { text: "你是一位營養師。請觀察照片中食物，估算總熱量。以 JSON 回傳：{\"cal\": 數字, \"desc\": \"食物名稱(熱量)\"}" },
+                            { inline_data: { mime_type: file.type, data: base64Data } }
+                        ] }]
                     })
                 });
                 const data = await response.json();
                 const json = JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json|```/g, ""));
-                if(confirm(`📸 AI 辨識：${json.desc}\n熱量：${json.cal} 大卡。紀錄嗎？`)) {
-                    recordData("📸 " + json.desc, json.cal);
-                }
-            } catch (e) { alert("辨識失敗，請檢查 API Key 或連網。"); }
+                if(confirm(`📸 AI 辨識：${json.desc}\n熱量：${json.cal} 大卡。要紀錄嗎？`)) recordData("📸 " + json.desc, json.cal);
+            } catch (e) { alert("辨識出錯，請確認 API Key。"); }
             finally { loader.style.display = "none"; preview.style.display = "none"; }
         }
 
-        // --- AI 文字分析 ---
         async function askAI() {
             const text = document.getElementById('aiInput').value.trim();
             if(!text) return;
@@ -155,7 +147,7 @@
                 });
                 const data = await response.json();
                 const json = JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json|```/g, ""));
-                if(confirm(`🪄 AI 估算：${json.desc}\n熱量：${json.cal} 大卡。紀錄嗎？`)) {
+                if(confirm(`🪄 AI 估算：${json.desc}\n熱量：${json.cal} 大卡。要紀錄嗎？`)) {
                     recordData("🪄 " + json.desc, json.cal);
                     document.getElementById('aiInput').value = "";
                 }
@@ -163,6 +155,7 @@
             finally { document.getElementById('aiLoading').style.display = "none"; }
         }
 
+        // --- 核心紀錄功能 ---
         function recordData(n, c) {
             const date = getD();
             if(!db.history[date]) db.history[date] = [];
@@ -170,7 +163,32 @@
             save();
         }
 
-        // --- 計步器與其他 ---
+        // --- 通知與定時報告 (您的要求點) ---
+        function checkAlarms() {
+            const now = new Date();
+            const cur = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
+            if (db.alarms.includes(cur)) {
+                const w = getSummary(7), m = getSummary(30);
+                const msg = `今日剩餘：${document.getElementById('remVal').innerText} kcal\n週均：${w.avg} (${w.status})\n月均：${m.avg} (${m.status})`;
+                if (Notification.permission === "granted") {
+                    new Notification("健康報告時間到了！", { body: msg, icon: "https://cdn-icons-png.flaticon.com/512/2424/2424742.png" });
+                } else {
+                    alert("🔔 定時報告：\n" + msg);
+                }
+            }
+        }
+
+        function getSummary(days) {
+            let total = 0, count = 0;
+            for(let i=0; i<days; i++) {
+                const daySum = (db.history[getD(i)] || []).reduce((s,l)=>s+l.c, 0);
+                if(daySum > 0) { total += daySum; count++; }
+            }
+            const avg = count > 0 ? Math.round(total / count) : 0;
+            return { avg, status: avg > db.tdee ? "超標" : "正常" };
+        }
+
+        // --- 計步感測器 ---
         function togglePedometer() {
             if (!isStepTracking) {
                 if (typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -181,7 +199,7 @@
 
         function startSteps() {
             isStepTracking = true; stepCount = 0;
-            document.getElementById('stepBtn').innerText = "停止計步";
+            document.getElementById('stepBtn').innerText = "停止紀錄";
             window.addEventListener('devicemotion', handleMotion);
         }
 
@@ -189,9 +207,7 @@
             isStepTracking = false;
             window.removeEventListener('devicemotion', handleMotion);
             const dist = parseFloat(document.getElementById('liveDist').innerText);
-            if(stepCount > 20) {
-                recordData(`🚶 行走 ${stepCount}步`, -Math.round(db.w * 0.5 * dist));
-            }
+            if(stepCount > 20) recordData(`🚶 行走 ${stepCount}步 (${dist}km)`, -Math.round(db.w * 0.5 * dist));
             document.getElementById('stepBtn').innerText = "開始計步";
             stepCount = 0; updateStepUI();
         }
@@ -209,56 +225,26 @@
             document.getElementById('liveDist').innerText = dist;
         }
 
-        function addEntry(type) {
-            const n=document.getElementById('en').value, m=parseInt(document.getElementById('em').value);
-            if(n && m) {
-                recordData(`${n}(${m}分)`, -Math.round(4.5 * db.w * (m/60)));
-                document.getElementById('en').value=''; document.getElementById('em').value='';
-            }
-        }
-
-        function checkAlarms() {
-            const now = new Date();
-            const cur = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
-            if (db.alarms.includes(cur)) {
-                const w = getSummary(7), m = getSummary(30);
-                const msg = `週均：${w.avg} (${w.status}) | 月均：${m.avg} (${m.status})`;
-                if (Notification.permission === "granted") new Notification("健康總結", { body: msg });
-                else alert("【定時總結】\n" + msg);
-            }
-        }
-
-        function getSummary(days) {
-            let total = 0, count = 0;
-            for(let i=0; i<days; i++) {
-                const daySum = (db.history[getD(i)] || []).reduce((s,l)=>s+l.c, 0);
-                if(daySum > 0) { total += daySum; count++; }
-            }
-            const avg = count > 0 ? Math.round(total / count) : 0;
-            return { avg, status: avg > db.tdee ? "超標" : "正常" };
-        }
-
-        function updateProfile() {
-            db.h = parseFloat(document.getElementById('h').value) || 170;
-            db.w = parseFloat(document.getElementById('w').value) || 60;
-            db.a = parseInt(document.getElementById('a').value) || 25;
-            db.tdee = Math.round((10 * db.w + 6.25 * db.h - 5 * db.a + 5) * 1.2);
-            save(); alert("個人數據已儲存。");
-        }
-
+        // --- 其他工具 ---
         function enableEverything() {
             Notification.requestPermission();
             togglePedometer(); setTimeout(stopSteps, 500);
             document.getElementById('notifPrompt').style.display = "none";
         }
-
+        function addEntry(type) {
+            const n=document.getElementById('en').value, m=parseInt(document.getElementById('em').value);
+            if(n && m) { recordData(`${n}(${m}分)`, -Math.round(4.5 * db.w * (m/60))); document.getElementById('en').value=''; document.getElementById('em').value=''; }
+        }
+        function updateProfile() {
+            db.h = parseFloat(document.getElementById('h').value) || 170;
+            db.w = parseFloat(document.getElementById('w').value) || 60;
+            db.a = parseInt(document.getElementById('a').value) || 25;
+            db.tdee = Math.round((10 * db.w + 6.25 * db.h - 5 * db.a + 5) * 1.2);
+            save(); alert("數據已儲存！");
+        }
         const toBase64 = f => new Promise((v,j)=>{const r=new FileReader(); r.readAsDataURL(f); r.onload=()=>v(r.result); r.onerror=e=>j(e);});
         function save() { store[user]=db; localStorage.setItem('cal_store', JSON.stringify(store)); refresh(); }
-        function loadUser() { 
-            document.getElementById('curUser').innerText = user;
-            document.getElementById('h').value = db.h; document.getElementById('w').value = db.w; document.getElementById('a').value = db.a;
-            refresh(); 
-        }
+        function loadUser() { document.getElementById('curUser').innerText = user; document.getElementById('h').value = db.h; document.getElementById('w').value = db.w; document.getElementById('a').value = db.a; refresh(); }
         function refresh() {
             const logs = db.history[getD()] || [];
             const intake = logs.reduce((s,i)=>s+i.c, 0);
@@ -269,7 +255,7 @@
         }
         function switchUser() {
             const n = document.getElementById('accInput').value.trim();
-            if(n) { user=n; if(!store[user]) store[user]={h:170, w:60, a:25, alarms:["12:00"], history:{}, tdee:2000}; db=store[user]; save(); loadUser(); }
+            if(n) { user=n; if(!store[user]) store[user]={h:170, w:60, a:25, alarms:["12:00", "19:00"], history:{}, tdee:2000}; db=store[user]; save(); loadUser(); }
         }
     </script>
 </body>
