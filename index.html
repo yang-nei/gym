@@ -6,11 +6,11 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    <title>熱量助手 Pro</title>
+    <title>熱量助手 Pro+</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --ios-blue: #007AFF; --ios-green: #34C759; --ios-orange: #FF9500; --ios-red: #FF3B30; --ios-bg: #F2F2F7; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--ios-bg); margin: 0; padding: 15px; padding-bottom: 60px; color: #1C1C1E; }
+        body { font-family: -apple-system, sans-serif; background: var(--ios-bg); margin: 0; padding: 15px; padding-bottom: 60px; color: #1C1C1E; }
         .card { background: white; border-radius: 18px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .user-header { background: linear-gradient(135deg, var(--ios-blue), #0056b3); color: white; padding: 22px; border-radius: 18px; margin-bottom: 15px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
@@ -23,6 +23,7 @@
         .chart-container { height: 200px; margin-top: 10px; }
         .alarm-item { display: flex; justify-content: space-between; align-items: center; background: #F2F2F7; padding: 12px; border-radius: 12px; margin-bottom: 8px; }
         .notif-banner { background: #5856D6; color: white; padding: 18px; border-radius: 18px; margin-bottom: 15px; text-align: center; }
+        .pedometer-active { background: #E8F2FF; border: 2px solid var(--ios-blue); }
         h2 { font-size: 18px; margin: 0 0 12px 0; font-weight: 700; }
     </style>
 </head>
@@ -37,8 +38,8 @@
     </div>
 
     <div id="notifPrompt" class="notif-banner">
-        🔔 開啟「智慧總結通知」<br><small>時間到將自動計算週/月進度</small>
-        <button style="background: white; color: #5856D6; margin-top: 12px; width: 100%;" onclick="enableNotifications()">啟動系統通知</button>
+        🔔 啟動「智慧通知」與「感測器」
+        <button style="background: white; color: #5856D6; margin-top: 12px; width: 100%;" onclick="enableEverything()">立即授權</button>
     </div>
 
     <div class="card">
@@ -49,7 +50,19 @@
         </div>
         <div class="status-area">
             <div id="statusIcon" style="font-size:50px;">🌱</div>
-            <div id="statusLabel" style="font-weight:700;">設定身體數據開始紀錄</div>
+            <div id="statusLabel" style="font-weight:700;">設定數據開始紀錄</div>
+        </div>
+    </div>
+
+    <div class="card" id="stepCard">
+        <h2>🏃 即時計步與距離</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <span style="font-size: 14px; color: #666;">本次行走</span>
+                <div style="font-size: 32px; font-weight: bold;"><span id="liveSteps">0</span> 步</div>
+                <div style="font-size: 14px; color: var(--ios-blue); font-weight: 600;">估計距離: <span id="liveDist">0.00</span> km</div>
+            </div>
+            <button id="stepBtn" style="background: var(--ios-blue); padding: 15px 25px;" onclick="togglePedometer()">開始計步</button>
         </div>
     </div>
 
@@ -59,7 +72,7 @@
             <input type="number" id="h" placeholder="身高 cm">
             <input type="number" id="w" placeholder="體重 kg">
             <input type="number" id="a" placeholder="年齡">
-            <button style="background: var(--ios-blue); grid-column: span 2;" onclick="updateProfile()">儲存並更新 TDEE</button>
+            <button style="background: var(--ios-blue); grid-column: span 2;" onclick="updateProfile()">儲存個人化數據</button>
         </div>
     </div>
 
@@ -67,9 +80,9 @@
         <h2>⏰ 多時段智慧提醒</h2>
         <div class="grid" style="grid-template-columns: 2fr 1fr;">
             <input type="time" id="newAlarm">
-            <button style="background: var(--ios-orange);" onclick="addAlarm()">＋新增鬧鐘</button>
+            <button style="background: var(--ios-orange);" onclick="addAlarm()">＋新增</button>
         </div>
-        <div id="alarmList" style="margin-top:10px;"></div>
+        <div id="alarmList"></div>
     </div>
 
     <div class="card">
@@ -83,20 +96,14 @@
         <button style="background:var(--ios-green); width:100%;" onclick="addEntry('food')">新增飲食</button>
     </div>
 
-    <div class="card" style="border-top: 6px solid var(--ios-orange);">
-        <h2>🏃‍♂️ 運動消耗</h2>
-        <div class="grid" style="grid-template-columns: 2fr 1fr;"><input type="text" id="en" placeholder="運動"><input type="number" id="em" placeholder="分鐘"></div>
-        <button style="background:var(--ios-orange); width:100%;" onclick="addEntry('ex')">計算消耗</button>
-    </div>
-
     <div class="card"><h2>📋 今日紀錄</h2><div id="logList"></div></div>
 
     <script>
         let user = localStorage.getItem('cal_user') || 'Guest';
         let store = JSON.parse(localStorage.getItem('cal_store')) || {};
-        if(!store[user]) store[user] = {h:170, w:60, a:25, alarms:["12:00", "19:00"], history:{}, tdee:2000};
+        if(!store[user]) store[user] = {h:170, w:60, a:25, alarms:["12:00"], history:{}, tdee:2000};
         let db = store[user];
-        let chart = null;
+        let chart = null, stepCount = 0, isStepTracking = false, lastAccel = {x:0, y:0, z:0};
 
         const getD = (offset = 0) => {
             const d = new Date(); d.setDate(d.getDate() - offset);
@@ -131,102 +138,116 @@
         }
 
         function updateProfile() {
-            db.h = parseFloat(document.getElementById('h').value);
-            db.w = parseFloat(document.getElementById('w').value);
-            db.a = parseInt(document.getElementById('a').value);
+            db.h = parseFloat(document.getElementById('h').value) || 170;
+            db.w = parseFloat(document.getElementById('w').value) || 60;
+            db.a = parseInt(document.getElementById('a').value) || 25;
             db.tdee = Math.round((10 * db.w + 6.25 * db.h - 5 * db.a + 5) * 1.2);
             save();
             alert("數據已同步！");
         }
 
-        function addAlarm() {
-            const time = document.getElementById('newAlarm').value;
-            if(!time) return;
-            if(!db.alarms) db.alarms = [];
-            db.alarms.push(time);
-            db.alarms.sort();
-            save();
-            renderAlarms();
+        // --- 計步器核心邏輯 ---
+        function togglePedometer() {
+            if (!isStepTracking) {
+                if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                    DeviceMotionEvent.requestPermission().then(state => { if (state === 'granted') startSteps(); });
+                } else { startSteps(); }
+            } else { stopSteps(); }
         }
 
-        function deleteAlarm(i) { db.alarms.splice(i, 1); save(); renderAlarms(); }
-
-        function renderAlarms() {
-            document.getElementById('alarmList').innerHTML = (db.alarms || []).map((t, i) => `
-                <div class="alarm-item"><span>🔔 ${t}</span><button style="background:var(--ios-red); padding:6px 12px; border-radius:10px;" onclick="deleteAlarm(${i})">刪除</button></div>
-            `).join('');
+        function startSteps() {
+            isStepTracking = true;
+            stepCount = 0;
+            document.getElementById('stepBtn').innerText = "停止紀錄";
+            document.getElementById('stepBtn').style.background = "var(--ios-red)";
+            document.getElementById('stepCard').classList.add('pedometer-active');
+            window.addEventListener('devicemotion', handleMotion);
         }
 
-        // --- 核心升級：智慧總結通知 ---
+        function stopSteps() {
+            isStepTracking = false;
+            window.removeEventListener('devicemotion', handleMotion);
+            const dist = parseFloat(document.getElementById('liveDist').innerText);
+            if(stepCount > 50) { // 走超過50步才紀錄
+                const cal = Math.round(db.w * 0.5 * dist);
+                const date = getD();
+                if(!db.history[date]) db.history[date] = [];
+                db.history[date].push({n: `🚶 行走 ${stepCount}步 (${dist}km)`, c: -cal});
+                save();
+                alert(`辛苦了！行走 ${dist}km，消耗 ${cal} 大卡`);
+            }
+            document.getElementById('stepBtn').innerText = "開始計步";
+            document.getElementById('stepBtn').style.background = "var(--ios-blue)";
+            document.getElementById('stepCard').classList.remove('pedometer-active');
+            stepCount = 0;
+            updateStepUI();
+        }
+
+        function handleMotion(e) {
+            let acc = e.accelerationIncludingGravity;
+            let change = Math.abs(acc.x + acc.y + acc.z - lastAccel.x - lastAccel.y - lastAccel.z);
+            if (change > 13) { stepCount++; updateStepUI(); }
+            lastAccel = {x:acc.x, y:acc.y, z:acc.z};
+        }
+
+        function updateStepUI() {
+            document.getElementById('liveSteps').innerText = stepCount;
+            const stride = (db.h * 0.45) / 100;
+            document.getElementById('liveDist').innerText = ((stepCount * stride) / 1000).toFixed(2);
+        }
+
+        // --- 通知與總結邏輯 ---
         function getSummary(days) {
-            let total = 0;
-            let count = 0;
+            let total = 0, count = 0;
             for(let i=0; i<days; i++) {
-                const d = getD(i);
-                const daySum = (db.history[d] || []).reduce((s,l)=>s+l.c, 0);
-                if(daySum > 0) {
-                    total += daySum;
-                    count++;
-                }
+                const daySum = (db.history[getD(i)] || []).reduce((s,l)=>s+l.c, 0);
+                if(daySum > 0) { total += daySum; count++; }
             }
             const avg = count > 0 ? Math.round(total / count) : 0;
-            const status = avg > db.tdee ? "⚠ 超標" : "✅ 正常";
-            return { avg, status };
+            return { avg, status: avg > db.tdee ? "超標" : "正常" };
         }
 
         function checkAlarms() {
-            const now = new Date();
-            const curTime = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
-            if ((db.alarms || []).includes(curTime)) {
-                const week = getSummary(7);
-                const month = getSummary(30);
-                
-                const title = `嗨 ${user}，紀錄時間到囉！`;
-                const body = `今日剩餘：${document.getElementById('remVal').innerText} kcal\n` +
-                             `📅 本週平均：${week.avg} (${week.status})\n` +
-                             `📊 本月平均：${month.avg} (${month.status})`;
-                
-                sendPush(title, body);
+            const cur = new Date().getHours().toString().padStart(2,'0')+":"+new Date().getMinutes().toString().padStart(2,'0');
+            if ((db.alarms || []).includes(cur)) {
+                const w = getSummary(7), m = getSummary(30);
+                sendPush(`紀錄時間到囉！`, `今日剩餘：${document.getElementById('remVal').innerText} kcal\n週均：${w.avg} (${w.status}) | 月均：${m.avg} (${m.status})`);
             }
         }
 
-        function sendPush(title, body) {
+        function sendPush(t, b) {
             if (Notification.permission === "granted") {
-                navigator.serviceWorker.ready.then(reg => {
-                    reg.showNotification(title, { 
-                        body: body, 
-                        icon: 'https://cdn-icons-png.flaticon.com/512/2424/2424742.png',
-                        badge: 'https://cdn-icons-png.flaticon.com/512/2424/2424742.png'
-                    });
-                });
-            } else { alert(title + "\n" + body); }
+                navigator.serviceWorker.ready.then(reg => reg.showNotification(t, {body:b, icon:'https://cdn-icons-png.flaticon.com/512/2424/2424742.png'}));
+            }
         }
 
-        function enableNotifications() {
+        function enableEverything() {
             Notification.requestPermission().then(p => {
-                if(p === "granted") {
-                    document.getElementById('notifPrompt').style.display = 'none';
-                    sendPush("通知啟動成功", "時間到時，我會直接把週、月結算報告傳給你！");
-                }
+                if(p==='granted') document.getElementById('notifPrompt').style.display='none';
             });
+            togglePedometer(); // 觸發感測器權限請求
+            setTimeout(stopSteps, 500);
         }
 
+        // --- 紀錄與存檔 ---
         function addEntry(type) {
             const date = getD();
             if(!db.history[date]) db.history[date] = [];
-            if(type==='food') {
-                const n=document.getElementById('fn').value, c=parseInt(document.getElementById('fc').value);
-                if(n && c) db.history[date].push({n, c});
-                document.getElementById('fn').value=''; document.getElementById('fc').value='';
-            } else {
-                const n=document.getElementById('en').value, m=parseInt(document.getElementById('em').value);
-                if(n && m) {
-                    const met = n.includes("跑")?8.5:n.includes("走")?3.5:4.5;
-                    db.history[date].push({n:n+`(${m}分)`, c:-Math.round(met*db.w*(m/60))});
-                }
-                document.getElementById('en').value=''; document.getElementById('em').value='';
-            }
+            const n=document.getElementById('fn').value, c=parseInt(document.getElementById('fc').value);
+            if(n && c) db.history[date].push({n, c});
+            document.getElementById('fn').value=''; document.getElementById('fc').value='';
             save();
+        }
+
+        function addAlarm() {
+            const t = document.getElementById('newAlarm').value;
+            if(t) { db.alarms.push(t); db.alarms.sort(); save(); renderAlarms(); }
+        }
+        function deleteAlarm(i) { db.alarms.splice(i, 1); save(); renderAlarms(); }
+        function renderAlarms() {
+            document.getElementById('alarmList').innerHTML = (db.alarms || []).map((t, i) => `
+                <div class="alarm-item"><span>🔔 ${t}</span><button style="background:var(--ios-red); padding:6px 10px; font-size:12px;" onclick="deleteAlarm(${i})">刪除</button></div>
+            `).join('');
         }
 
         function save() { store[user]=db; localStorage.setItem('cal_store', JSON.stringify(store)); refresh(); }
@@ -241,9 +262,9 @@
             document.getElementById('remVal').innerText = rem;
             
             let icon="🌱", txt="加油！";
-            if(logs.length>0) {
-                if(rem>300){icon="🌳"; txt="很棒啊！";}
-                else if(rem>=0){icon="🍎"; txt="一定要的啊！";}
+            if(logs.length > 0) {
+                if(rem > 300) {icon="🌳"; txt="很棒啊！";}
+                else if(rem >= 0) {icon="🍎"; txt="一定要的啊！";}
                 else {icon="💀"; txt="頹廢 polk 在後面！";}
             }
             document.getElementById('statusIcon').innerText=icon;
@@ -262,7 +283,7 @@
             if(chart) chart.destroy();
             chart = new Chart(document.getElementById('myChart'), {
                 type: 'line',
-                data: { labels, datasets: [{ label:'熱量趨勢', data:vals, borderColor:'#007AFF', tension:0.4, fill:true, backgroundColor:'rgba(0,122,255,0.1)' }] },
+                data: { labels, datasets: [{ label:'熱量', data:vals, borderColor:'#007AFF', tension:0.4, fill:true, backgroundColor:'rgba(0,122,255,0.1)' }] },
                 options: { responsive:true, maintainAspectRatio:false }
             });
         }
