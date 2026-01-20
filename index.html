@@ -5,38 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>AI 熱量助手 Pro Max</title>
+    <title>AI 旗艦助手 Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --ios-blue: #007AFF; --ios-green: #34C759; --ios-orange: #FF9500; --ios-red: #FF3B30; --ios-bg: #F2F2F7; --ai-purple: #5856D6; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--ios-bg); margin: 0; padding: 15px; padding-bottom: 60px; color: #1C1C1E; }
+        body { font-family: -apple-system, sans-serif; background: var(--ios-bg); margin: 0; padding: 15px; padding-bottom: 80px; color: #1C1C1E; }
         .card { background: white; border-radius: 18px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .user-header { background: linear-gradient(135deg, var(--ios-blue), #0056b3); color: white; padding: 20px; border-radius: 18px; margin-bottom: 15px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        input, textarea { border: 1.5px solid #E5E5EA; border-radius: 12px; padding: 14px; font-size: 16px; width: 100%; box-sizing: border-box; background: #FAFAFA; }
-        button { border: none; border-radius: 14px; padding: 14px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; }
-        button:active { transform: scale(0.95); opacity: 0.8; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        input, textarea { border: 1.5px solid #E5E5EA; border-radius: 12px; padding: 14px; font-size: 16px; width: 100%; box-sizing: border-box; }
+        button { border: none; border-radius: 14px; padding: 14px; font-weight: bold; cursor: pointer; color: white; }
         .summary-row { display: flex; justify-content: space-around; text-align: center; }
         .summary-item b { font-size: 24px; display: block; color: var(--ios-blue); }
-        .ai-btn { background: var(--ai-purple); width: 100%; margin-top: 10px; }
-        .ai-loading { color: var(--ai-purple); font-size: 13px; display: none; margin-top: 10px; text-align: center; font-weight: bold; }
+        .ai-btn { background: var(--ai-purple); width: 100%; }
+        .ai-loading { color: var(--ai-purple); font-size: 13px; display: none; text-align: center; margin: 10px 0; font-weight: bold; }
         .log-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 0.5px solid #EEE; }
-        .pedometer-active { border: 2px solid var(--ios-blue); background: #E8F2FF; }
-        .notif-banner { background: var(--ai-purple); color: white; padding: 15px; border-radius: 15px; margin-bottom: 15px; text-align: center; cursor: pointer; }
+        #preview { width: 100%; border-radius: 12px; margin-top: 10px; display: none; }
+        .notif-banner { background: var(--ai-purple); color: white; padding: 15px; border-radius: 15px; margin-bottom: 15px; text-align: center; }
     </style>
 </head>
 <body>
 
     <div class="user-header">
-        <h2 style="margin:0 0 10px 0;">👤 <span id="curUser">訪客</span></h2>
-        <div class="grid" style="grid-template-columns: 2.5fr 1fr;">
+        <h2 style="margin:0;">👤 <span id="curUser">訪客</span></h2>
+        <div class="grid" style="grid-template-columns: 2fr 1fr; margin-top:10px;">
             <input type="text" id="accInput" placeholder="切換名稱">
-            <button style="background:rgba(255,255,255,0.25);" onclick="switchUser()">切換</button>
+            <button style="background:rgba(255,255,255,0.2);" onclick="switchUser()">切換</button>
         </div>
     </div>
 
     <div id="notifPrompt" class="notif-banner" onclick="enableEverything()">
-        🔔 點擊此處啟動「AI 辨識」與「計步感測」
+        🔔 點此授權「智慧通知」與「相機感應」
     </div>
 
     <div class="card">
@@ -48,30 +47,32 @@
     </div>
 
     <div class="card" style="border: 2px solid var(--ai-purple);">
-        <h2 style="color: var(--ai-purple); margin-top:0;">🪄 AI 智慧飲食辨識</h2>
-        <textarea id="aiInput" placeholder="例如：早餐吃了一份蛋餅加大冰奶" rows="2"></textarea>
-        <button class="ai-btn" onclick="askAI()">AI 估算熱量</button>
-        <div id="aiLoading" class="ai-loading">✨ Gemini 正在分析並計算熱量...</div>
+        <h2 style="color: var(--ai-purple); margin:0 0 10px 0;">🪄 AI 智慧辨識 (拍照/文字)</h2>
+        <textarea id="aiInput" placeholder="輸入食物內容或直接點擊右側拍照..." rows="2"></textarea>
+        <div class="grid" style="margin-top:10px;">
+            <button class="ai-btn" onclick="askAI()">文字分析</button>
+            <button class="ai-btn" style="background:var(--ios-green);" onclick="document.getElementById('imgIn').click()">📷 拍照辨識</button>
+        </div>
+        <input type="file" id="imgIn" accept="image/*" capture="environment" style="display:none;" onchange="analyzeImage(this)">
+        <div id="aiLoading" class="ai-loading">✨ Gemini 正在努力辨識中...</div>
+        <img id="preview">
     </div>
 
     <div class="card" id="stepCard">
-        <h2>🏃 即時計步與距離</h2>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>🏃 運動與即時計步</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <div>
                 <div style="font-size: 32px; font-weight: bold;"><span id="liveSteps">0</span> 步</div>
                 <div style="color: var(--ios-blue); font-weight: 600;">距離: <span id="liveDist">0.00</span> km</div>
             </div>
-            <button id="stepBtn" style="background: var(--ios-blue); padding: 15px 20px;" onclick="togglePedometer()">開始計步</button>
+            <button id="stepBtn" style="background: var(--ios-blue); padding: 15px 25px;" onclick="togglePedometer()">開始計步</button>
         </div>
-    </div>
-
-    <div class="card" style="border-left: 6px solid var(--ios-orange);">
-        <h2 style="margin-top:0;">🏃‍♂️ 手動運動紀錄</h2>
-        <div class="grid" style="grid-template-columns: 2fr 1fr;">
+        <hr style="border: 0.5px solid #F2F2F7;">
+        <div class="grid" style="grid-template-columns: 2fr 1fr; margin-top:10px;">
             <input type="text" id="en" placeholder="運動(如:打球)">
-            <input type="number" id="em" placeholder="分鐘">
+            <input type="number" id="em" placeholder="分">
         </div>
-        <button style="background:var(--ios-orange); width:100%;" onclick="addEntry('ex')">新增運動消耗</button>
+        <button style="background:var(--ios-orange); width:100%; margin-top:10px;" onclick="addEntry('ex')">新增手動運動</button>
     </div>
 
     <div class="card">
@@ -80,22 +81,21 @@
             <input type="number" id="h" placeholder="身高 cm">
             <input type="number" id="w" placeholder="體重 kg">
             <input type="number" id="a" placeholder="年齡">
-            <button style="background: var(--ios-blue); grid-column: span 2;" onclick="updateProfile()">儲存個人數據</button>
+            <button style="background: var(--ios-blue); grid-column: span 2;" onclick="updateProfile()">儲存數據</button>
         </div>
     </div>
 
-    <div class="card"><h2>📊 熱量趨勢</h2><div style="height:200px;"><canvas id="myChart"></canvas></div></div>
     <div class="card"><h2>📋 今日紀錄</h2><div id="logList"></div></div>
 
     <script>
-        // === [請在此處填入你的 API Key] ===
-        const API_KEY = "AIzaSyADqOezfr_Yz1RXVnxaKU5_Pi1IZP4NnX4"; 
+        // === [ 關鍵：填入你的 API KEY ] ===
+        const API_KEY = "AIzaSyADqOezfr_Yz1RXVnxaKU5_Pi1IZP4NnX4";
 
         let user = localStorage.getItem('cal_user') || 'Guest';
         let store = JSON.parse(localStorage.getItem('cal_store')) || {};
         if(!store[user]) store[user] = {h:170, w:60, a:25, alarms:["12:00", "19:00"], history:{}, tdee:2000};
         let db = store[user];
-        let chart = null, stepCount = 0, isStepTracking = false, lastAccel = {x:0, y:0, z:0};
+        let stepCount = 0, isStepTracking = false, lastAccel = {x:0, y:0, z:0};
 
         const getD = (offset = 0) => {
             const d = new Date(); d.setDate(d.getDate() - offset);
@@ -104,36 +104,73 @@
 
         window.onload = () => { loadUser(); setInterval(checkAlarms, 60000); };
 
-        // --- AI 邏輯 ---
-        async function askAI() {
-            const text = document.getElementById('aiInput').value.trim();
-            if(!text) return;
+        // --- AI 拍照辨識 ---
+        async function analyzeImage(input) {
+            if (!input.files?.[0]) return;
+            const file = input.files[0];
             const loader = document.getElementById('aiLoading');
+            const preview = document.getElementById('preview');
+            
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = "block";
             loader.style.display = "block";
+
+            const base64 = await toBase64(file);
+            const base64Data = base64.split(',')[1];
 
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `你是一位專業營養師。請分析「${text}」中的食物，並嚴格只回傳 JSON 格式。範例：{"cal": 500, "desc": "蛋餅(300)+奶茶(200)"}` }] }]
+                        contents: [{
+                            parts: [
+                                { text: "你是一位營養師。請觀察照片中食物，以 JSON 格式回傳估算熱量。格式：{\"cal\": 數字, \"desc\": \"食物名稱與份量(熱量)\"}" },
+                                { inline_data: { mime_type: file.type, data: base64Data } }
+                            ]
+                        }]
                     })
                 });
                 const data = await response.json();
                 const json = JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json|```/g, ""));
-                
-                if(confirm(`AI 分析結果：\n${json.desc}\n預估總熱量：${json.cal} 大卡。是否紀錄？`)) {
-                    const date = getD();
-                    if(!db.history[date]) db.history[date] = [];
-                    db.history[date].push({n: "🪄 " + json.desc, c: json.cal});
-                    save();
-                    document.getElementById('aiInput').value = "";
+                if(confirm(`📸 AI 辨識：${json.desc}\n熱量：${json.cal} 大卡。紀錄嗎？`)) {
+                    recordData("📸 " + json.desc, json.cal);
                 }
-            } catch (e) { alert("AI 辨識發生錯誤，請檢查網路或 API Key。"); }
-            finally { loader.style.display = "none"; }
+            } catch (e) { alert("辨識失敗，請檢查 API Key 或連網。"); }
+            finally { loader.style.display = "none"; preview.style.display = "none"; }
         }
 
-        // --- 計步與感測器 ---
+        // --- AI 文字分析 ---
+        async function askAI() {
+            const text = document.getElementById('aiInput').value.trim();
+            if(!text) return;
+            document.getElementById('aiLoading').style.display = "block";
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: `你是一位專業營養師。分析「${text}」，僅回傳 JSON：{"cal": 數字, "desc": "簡短摘要"}` }] }]
+                    })
+                });
+                const data = await response.json();
+                const json = JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json|```/g, ""));
+                if(confirm(`🪄 AI 估算：${json.desc}\n熱量：${json.cal} 大卡。紀錄嗎？`)) {
+                    recordData("🪄 " + json.desc, json.cal);
+                    document.getElementById('aiInput').value = "";
+                }
+            } catch (e) { alert("AI 分析失敗。"); }
+            finally { document.getElementById('aiLoading').style.display = "none"; }
+        }
+
+        function recordData(n, c) {
+            const date = getD();
+            if(!db.history[date]) db.history[date] = [];
+            db.history[date].push({n, c});
+            save();
+        }
+
+        // --- 計步器與其他 ---
         function togglePedometer() {
             if (!isStepTracking) {
                 if (typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -144,9 +181,7 @@
 
         function startSteps() {
             isStepTracking = true; stepCount = 0;
-            document.getElementById('stepBtn').innerText = "停止紀錄";
-            document.getElementById('stepBtn').style.background = "var(--ios-red)";
-            document.getElementById('stepCard').classList.add('pedometer-active');
+            document.getElementById('stepBtn').innerText = "停止計步";
             window.addEventListener('devicemotion', handleMotion);
         }
 
@@ -154,16 +189,10 @@
             isStepTracking = false;
             window.removeEventListener('devicemotion', handleMotion);
             const dist = parseFloat(document.getElementById('liveDist').innerText);
-            if(stepCount > 30) {
-                const cal = Math.round(db.w * 0.5 * dist);
-                const date = getD();
-                if(!db.history[date]) db.history[date] = [];
-                db.history[date].push({n: `🚶 行走 ${stepCount}步 (${dist}km)`, c: -cal});
-                save();
+            if(stepCount > 20) {
+                recordData(`🚶 行走 ${stepCount}步`, -Math.round(db.w * 0.5 * dist));
             }
             document.getElementById('stepBtn').innerText = "開始計步";
-            document.getElementById('stepBtn').style.background = "var(--ios-blue)";
-            document.getElementById('stepCard').classList.remove('pedometer-active');
             stepCount = 0; updateStepUI();
         }
 
@@ -176,29 +205,16 @@
 
         function updateStepUI() {
             document.getElementById('liveSteps').innerText = stepCount;
-            const stride = (db.h * 0.45) / 100;
-            document.getElementById('liveDist').innerText = ((stepCount * stride) / 1000).toFixed(2);
+            const dist = (stepCount * db.h * 0.45 / 100 / 1000).toFixed(2);
+            document.getElementById('liveDist').innerText = dist;
         }
 
-        // --- 核心功能 ---
         function addEntry(type) {
-            const date = getD();
-            if(!db.history[date]) db.history[date] = [];
             const n=document.getElementById('en').value, m=parseInt(document.getElementById('em').value);
             if(n && m) {
-                const cal = Math.round(4.5 * db.w * (m/60));
-                db.history[date].push({n: `${n}(${m}分)`, c: -cal});
+                recordData(`${n}(${m}分)`, -Math.round(4.5 * db.w * (m/60)));
                 document.getElementById('en').value=''; document.getElementById('em').value='';
-                save();
             }
-        }
-
-        function updateProfile() {
-            db.h = parseFloat(document.getElementById('h').value) || 170;
-            db.w = parseFloat(document.getElementById('w').value) || 60;
-            db.a = parseInt(document.getElementById('a').value) || 25;
-            db.tdee = Math.round((10 * db.w + 6.25 * db.h - 5 * db.a + 5) * 1.2);
-            save(); alert("個人設定已更新！");
         }
 
         function checkAlarms() {
@@ -206,21 +222,28 @@
             const cur = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
             if (db.alarms.includes(cur)) {
                 const w = getSummary(7), m = getSummary(30);
-                const msg = `週均：${w.avg} (${w.status})\n月均：${m.avg} (${m.status})`;
-                if (Notification.permission === "granted") {
-                    new Notification("熱量總結報告", { body: msg });
-                } else { alert("【定時報告】\n" + msg); }
+                const msg = `週均：${w.avg} (${w.status}) | 月均：${m.avg} (${m.status})`;
+                if (Notification.permission === "granted") new Notification("健康總結", { body: msg });
+                else alert("【定時總結】\n" + msg);
             }
         }
 
         function getSummary(days) {
             let total = 0, count = 0;
             for(let i=0; i<days; i++) {
-                const sum = (db.history[getD(i)] || []).reduce((s,l)=>s+l.c, 0);
-                if(sum > 0) { total += sum; count++; }
+                const daySum = (db.history[getD(i)] || []).reduce((s,l)=>s+l.c, 0);
+                if(daySum > 0) { total += daySum; count++; }
             }
             const avg = count > 0 ? Math.round(total / count) : 0;
             return { avg, status: avg > db.tdee ? "超標" : "正常" };
+        }
+
+        function updateProfile() {
+            db.h = parseFloat(document.getElementById('h').value) || 170;
+            db.w = parseFloat(document.getElementById('w').value) || 60;
+            db.a = parseInt(document.getElementById('a').value) || 25;
+            db.tdee = Math.round((10 * db.w + 6.25 * db.h - 5 * db.a + 5) * 1.2);
+            save(); alert("個人數據已儲存。");
         }
 
         function enableEverything() {
@@ -229,8 +252,13 @@
             document.getElementById('notifPrompt').style.display = "none";
         }
 
+        const toBase64 = f => new Promise((v,j)=>{const r=new FileReader(); r.readAsDataURL(f); r.onload=()=>v(r.result); r.onerror=e=>j(e);});
         function save() { store[user]=db; localStorage.setItem('cal_store', JSON.stringify(store)); refresh(); }
-
+        function loadUser() { 
+            document.getElementById('curUser').innerText = user;
+            document.getElementById('h').value = db.h; document.getElementById('w').value = db.w; document.getElementById('a').value = db.a;
+            refresh(); 
+        }
         function refresh() {
             const logs = db.history[getD()] || [];
             const intake = logs.reduce((s,i)=>s+i.c, 0);
@@ -238,33 +266,10 @@
             document.getElementById('intakeVal').innerText = intake;
             document.getElementById('remVal').innerText = db.tdee - intake;
             document.getElementById('logList').innerHTML = logs.map(l=>`<div class="log-item"><span>${l.n}</span><b style="color:${l.c>0?'var(--ios-red)':'var(--ios-blue)'}">${l.c>0?'+':''}${l.c}</b></div>`).reverse().join('');
-            renderChart();
         }
-
-        function renderChart() {
-            const labels = [], vals = [];
-            for(let i=6; i>=0; i--) {
-                const d = getD(i);
-                labels.push(d.split('-')[2]+'日');
-                vals.push((db.history[d] || []).reduce((s,l)=>s+l.c, 0));
-            }
-            if(chart) chart.destroy();
-            chart = new Chart(document.getElementById('myChart'), {
-                type: 'line',
-                data: { labels, datasets: [{ label:'熱量', data:vals, borderColor:'#007AFF', tension:0.4 }] },
-                options: { responsive:true, maintainAspectRatio:false }
-            });
-        }
-
         function switchUser() {
             const n = document.getElementById('accInput').value.trim();
             if(n) { user=n; if(!store[user]) store[user]={h:170, w:60, a:25, alarms:["12:00"], history:{}, tdee:2000}; db=store[user]; save(); loadUser(); }
-        }
-
-        function loadUser() {
-            document.getElementById('curUser').innerText = user;
-            document.getElementById('h').value = db.h; document.getElementById('w').value = db.w; document.getElementById('a').value = db.a;
-            refresh();
         }
     </script>
 </body>
