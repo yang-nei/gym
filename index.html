@@ -4,35 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>熱量助手 Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --ios-blue: #007AFF; --ios-green: #34C759; --ios-orange: #FF9500; --ios-red: #FF3B30; --ios-bg: #F2F2F7; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--ios-bg); margin: 0; padding: 15px; color: #1C1C1E; -webkit-tap-highlight-color: transparent; }
-        .card { background: white; border-radius: 15px; padding: 18px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        h2 { font-size: 17px; margin: 0 0 12px 0; display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        input, select { border: 1.5px solid #E5E5EA; border-radius: 10px; padding: 12px; font-size: 16px; width: 100%; box-sizing: border-box; background: #F9F9F9; }
-        input:focus { border-color: var(--ios-blue); outline: none; background: #FFF; }
-        button { border: none; border-radius: 12px; padding: 14px; font-size: 16px; font-weight: bold; width: 100%; cursor: pointer; color: white; active-opacity: 0.7; }
-        .summary-row { display: flex; justify-content: space-around; text-align: center; padding: 10px 0; }
-        .summary-item b { font-size: 24px; display: block; color: var(--ios-blue); }
-        .status-box { text-align: center; padding: 15px; font-size: 50px; }
-        .status-text { font-size: 15px; font-weight: 600; text-align: center; margin-bottom: 10px; }
-        .log-item { display: flex; justify-content: space-between; padding: 12px 5px; border-bottom: 0.5px solid #EEE; font-size: 15px; }
-        .cal-pos { color: var(--ios-red); }
-        .cal-neg { color: var(--ios-blue); }
-        .user-section { background: linear-gradient(135deg, #007AFF, #0056b3); color: white; padding: 20px; border-radius: 15px; margin-bottom: 15px; }
-        .user-section h2 { color: white; }
+        body { font-family: -apple-system, sans-serif; background: var(--ios-bg); margin: 0; padding: 15px; padding-bottom: 50px; }
+        .card { background: white; border-radius: 15px; padding: 18px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .user-header { background: var(--ios-blue); color: white; padding: 15px; border-radius: 15px; margin-bottom: 15px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+        input, select { border: 1px solid #D1D1D6; border-radius: 8px; padding: 10px; font-size: 15px; width: 100%; box-sizing: border-box; }
+        button { border: none; border-radius: 10px; padding: 12px; font-weight: bold; cursor: pointer; color: white; }
+        .summary-row { display: flex; justify-content: space-around; text-align: center; }
+        .summary-item b { font-size: 20px; display: block; color: var(--ios-blue); }
+        .status-area { text-align: center; padding: 10px; border-top: 1px solid #F2F2F7; margin-top: 10px; }
+        .chart-container { height: 200px; margin-top: 10px; }
+        .tabs { display: flex; gap: 5px; margin-bottom: 10px; }
+        .tab-btn { flex: 1; background: #DDD; color: #666; padding: 8px; border-radius: 8px; font-size: 13px; text-align: center; cursor: pointer; }
+        .tab-btn.active { background: var(--ios-blue); color: white; }
+        .log-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 0.5px solid #EEE; font-size: 14px; }
     </style>
 </head>
 <body>
 
-    <div class="user-section">
-        <h2>👤 帳號：<span id="currentUserDisplay">訪客</span></h2>
+    <div class="user-header">
+        <h2 style="margin:0 0 10px 0; font-size:18px;">👤 帳號：<span id="curUser">訪客</span></h2>
         <div class="grid" style="grid-template-columns: 2fr 1fr;">
-            <input type="text" id="accountInput" placeholder="輸入名稱">
-            <button style="background: rgba(255,255,255,0.2); border: 1px solid white;" onclick="switchUser()">登入</button>
+            <input type="text" id="accInput" placeholder="切換帳號名稱">
+            <button style="background:rgba(255,255,255,0.3);" onclick="switchUser()">切換</button>
         </div>
     </div>
 
@@ -42,154 +40,163 @@
             <div class="summary-item"><small>淨攝取</small><b id="intakeVal">--</b></div>
             <div class="summary-item"><small>剩餘</small><b id="remVal">--</b></div>
         </div>
-        <div id="statusIcon" class="status-box">🌱</div>
-        <div id="statusLabel" class="status-text">今天還沒開始紀錄喔！</div>
+        <div class="status-area">
+            <div id="statusIcon" style="font-size:40px;">🌱</div>
+            <div id="statusLabel" style="font-size:14px; font-weight:bold;">開始紀錄吧！</div>
+        </div>
     </div>
 
     <div class="card">
-        <h2>⚙️ 設定</h2>
+        <h2>📊 數據總結</h2>
+        <div class="tabs">
+            <div class="tab-btn active" id="t7" onclick="renderChart(7)">週統計</div>
+            <div class="tab-btn" id="t30" onclick="renderChart(30)">月總結</div>
+        </div>
+        <div class="chart-container">
+            <canvas id="myChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>⚙️ 個人設定與提醒</h2>
         <div class="grid">
             <input type="number" id="h" placeholder="身高 cm">
             <input type="number" id="w" placeholder="體重 kg">
             <input type="number" id="a" placeholder="年齡">
-            <input type="time" id="t" title="提醒時間">
+            <input type="time" id="tm" title="每日提醒時間">
         </div>
-        <button style="background: var(--ios-blue);" onclick="saveProfile()">更新數據</button>
+        <button style="background:var(--ios-blue);" onclick="updateProfile()">更新設定</button>
     </div>
 
-    <div class="card" style="border-top: 5px solid var(--ios-green);">
-        <h2>🍎 飲食紀錄</h2>
-        <div class="grid" style="grid-template-columns: 2fr 1fr;">
-            <input type="text" id="fname" placeholder="食物內容">
-            <input type="number" id="fcal" placeholder="熱量">
-        </div>
-        <button style="background: var(--ios-green);" onclick="addLog('food')">新增飲食</button>
+    <div class="card" style="border-left: 5px solid var(--ios-green);">
+        <h2>🍎 飲食</h2>
+        <div class="grid" style="grid-template-columns: 2fr 1fr;"><input type="text" id="fn" placeholder="食物"><input type="number" id="fc" placeholder="大卡"></div>
+        <button style="background:var(--ios-green);" onclick="addEntry('food')">新增飲食</button>
     </div>
 
-    <div class="card" style="border-top: 5px solid var(--ios-orange);">
-        <h2>🏃‍♂️ 運動辨識</h2>
-        <div class="grid" style="grid-template-columns: 2fr 1fr;">
-            <input type="text" id="exName" placeholder="運動(如:快走)">
-            <input type="number" id="exMin" placeholder="分鐘">
-        </div>
-        <button style="background: var(--ios-orange);" onclick="addLog('ex')">計算消耗</button>
+    <div class="card" style="border-left: 5px solid var(--ios-orange);">
+        <h2>🏃‍♂️ 運動</h2>
+        <div class="grid" style="grid-template-columns: 2fr 1fr;"><input type="text" id="en" placeholder="運動"><input type="number" id="em" placeholder="分鐘"></div>
+        <button style="background:var(--ios-orange);" onclick="addEntry('ex')">計算消耗</button>
     </div>
 
     <div class="card">
         <h2>📋 今日紀錄</h2>
         <div id="logList"></div>
-        <button onclick="clearAll()" style="background:#8E8E93; margin-top:20px; font-size:13px;">清除帳號所有紀錄</button>
     </div>
 
     <script>
-        let currentUser = localStorage.getItem('lastUser') || 'Guest';
-        let allUsersData = JSON.parse(localStorage.getItem('multiUserData')) || {};
+        let user = localStorage.getItem('cal_user') || 'Guest';
+        let store = JSON.parse(localStorage.getItem('cal_store')) || {};
+        if(!store[user]) store[user] = {h:170, w:60, a:25, tm:"21:00", history:{}, tdee:2000};
+        let db = store[user];
+        let chart = null;
 
-        if (!allUsersData[currentUser]) {
-            allUsersData[currentUser] = { h:170, w:60, a:25, t:"21:00", logs: [], tdee: 2000 };
-        }
-        let db = allUsersData[currentUser];
-
-        window.onload = function() {
-            loadUserData();
-            setInterval(checkNotif, 60000);
+        const getD = (offset = 0) => {
+            const d = new Date(); d.setDate(d.getDate() - offset);
+            return d.toISOString().split('T')[0];
         };
 
+        window.onload = () => { loadUser(); setInterval(checkAlarm, 60000); };
+
         function switchUser() {
-            const newUser = document.getElementById('accountInput').value.trim();
-            if (!newUser) return;
-            allUsersData[currentUser] = db;
-            currentUser = newUser;
-            localStorage.setItem('lastUser', currentUser);
-            if (!allUsersData[currentUser]) {
-                allUsersData[currentUser] = { h:170, w:60, a:25, t:"21:00", logs: [], tdee: 2000 };
-            }
-            db = allUsersData[currentUser];
-            document.getElementById('accountInput').value = '';
-            loadUserData();
+            const n = document.getElementById('accInput').value.trim();
+            if(!n) return;
+            store[user] = db;
+            user = n;
+            localStorage.setItem('cal_user', user);
+            if(!store[user]) store[user] = {h:170, w:60, a:25, tm:"21:00", history:{}, tdee:2000};
+            db = store[user];
+            loadUser();
         }
 
-        function loadUserData() {
-            document.getElementById('currentUserDisplay').innerText = currentUser;
-            document.getElementById('h').value = db.h || '';
-            document.getElementById('w').value = db.w || '';
-            document.getElementById('a').value = db.a || '';
-            document.getElementById('t').value = db.t || '21:00';
-            render();
+        function loadUser() {
+            document.getElementById('curUser').innerText = user;
+            document.getElementById('h').value = db.h;
+            document.getElementById('w').value = db.w;
+            document.getElementById('a').value = db.a;
+            document.getElementById('tm').value = db.tm;
+            refresh();
         }
 
-        function saveProfile() {
+        function updateProfile() {
             db.h = document.getElementById('h').value;
             db.w = document.getElementById('w').value;
             db.a = document.getElementById('a').value;
-            db.t = document.getElementById('t').value;
-            db.tdee = Math.round((10 * db.w + 6.25 * db.h - 5 * db.a + 5) * 1.2);
+            db.tm = document.getElementById('tm').value;
+            db.tdee = Math.round((10*db.w + 6.25*db.h - 5*db.a + 5) * 1.2);
             save();
-            alert("設定已儲存");
         }
 
-        function addLog(type) {
-            let n, c;
-            if(type === 'food') {
-                n = document.getElementById('fname').value;
-                c = parseInt(document.getElementById('fcal').value);
-                document.getElementById('fname').value = '';
-                document.getElementById('fcal').value = '';
+        function addEntry(type) {
+            const date = getD();
+            if(!db.history[date]) db.history[date] = [];
+            if(type==='food') {
+                const n=document.getElementById('fn').value, c=parseInt(document.getElementById('fc').value);
+                if(n && c) db.history[date].push({n, c});
+                document.getElementById('fn').value=''; document.getElementById('fc').value='';
             } else {
-                let name = document.getElementById('exName').value;
-                let min = parseFloat(document.getElementById('exMin').value);
-                if(!name || !min) return;
-                let met = 4.0;
-                if(name.includes("跑")) met = 8.5;
-                else if(name.includes("走")) met = 3.5;
-                else if(name.includes("籃") || name.includes("足")) met = 8.0;
-                n = name + "(" + min + "分)";
-                c = -Math.round(met * db.w * (min / 60));
-                document.getElementById('exName').value = '';
-                document.getElementById('exMin').value = '';
+                const n=document.getElementById('en').value, m=parseInt(document.getElementById('em').value);
+                if(n && m) {
+                    const met = n.includes("跑")?8.5:n.includes("走")?3.5:4.5;
+                    db.history[date].push({n:n+`(${m}分)`, c:-Math.round(met*db.w*(m/60))});
+                }
+                document.getElementById('en').value=''; document.getElementById('em').value='';
             }
-            if(n && !isNaN(c)) {
-                db.logs.push({ n, c });
-                save();
-            }
+            save();
         }
 
-        function save() {
-            allUsersData[currentUser] = db;
-            localStorage.setItem('multiUserData', JSON.stringify(allUsersData));
-            render();
-        }
+        function save() { store[user]=db; localStorage.setItem('cal_store', JSON.stringify(store)); refresh(); }
 
-        function render() {
-            const tdee = db.tdee || 2000;
-            const intake = db.logs.reduce((s, i) => s + i.c, 0);
-            const rem = tdee - intake;
-            
-            document.getElementById('targetVal').innerText = tdee;
+        function refresh() {
+            const today = getD();
+            const logs = db.history[today] || [];
+            const intake = logs.reduce((s,i)=>s+i.c, 0);
+            const rem = db.tdee - intake;
+            document.getElementById('targetVal').innerText = db.tdee;
             document.getElementById('intakeVal').innerText = intake;
             document.getElementById('remVal').innerText = rem;
 
-            let icon = "🌱", label = "開始今天的健康之旅！", color = "#8E8E93";
-            if(db.logs.length > 0) {
-                if(rem >= 300) { icon = "🌳"; label = "太棒了！你的森林非常茂盛！"; color = "var(--ios-green)"; }
-                else if(rem >= 0) { icon = "🍎"; label = "成功達標！果實結得很好！"; color = "var(--ios-orange)"; }
-                else { icon = "💀"; label = "熱量超標！明天再加油！"; color = "var(--ios-red)"; }
+            let icon="🌱", txt="加油！";
+            if(logs.length>0) {
+                if(rem>300){icon="🌳"; txt="森林茂盛！";}
+                else if(rem>=0){icon="🍎"; txt="成果豐碩！";}
+                else {icon="💀"; txt="爆掉了！";}
             }
-            document.getElementById('statusIcon').innerText = icon;
-            document.getElementById('statusLabel').innerText = label;
-            document.getElementById('statusLabel').style.color = color;
+            document.getElementById('statusIcon').innerText=icon;
+            document.getElementById('statusLabel').innerText=txt;
 
-            document.getElementById('logList').innerHTML = db.logs.map(i => `
-                <div class="log-item"><span>${i.n}</span><b class="${i.c > 0 ? 'cal-pos' : 'cal-neg'}">${i.c > 0 ? '+' : ''}${i.c}</b></div>
+            document.getElementById('logList').innerHTML = logs.map(l=>`
+                <div class="log-item"><span>${l.n}</span><b class="${l.c>0?'cal-pos':'cal-neg'}">${l.c>0?'+':''}${l.c}</b></div>
             `).reverse().join('');
+            renderChart(7);
         }
 
-        function checkNotif() {
-            const cur = new Date().getHours().toString().padStart(2, '0') + ":" + new Date().getMinutes().toString().padStart(2, '0');
-            if(cur === db.t && db.logs.length === 0) alert("⏰ 嗨 " + currentUser + "，記得紀錄今天的熱量喔！");
+        function renderChart(days) {
+            document.getElementById('t7').classList.toggle('active', days===7);
+            document.getElementById('t30').classList.toggle('active', days===30);
+            const labels = [], vals = [];
+            for(let i=days-1; i>=0; i--) {
+                const d = getD(i);
+                labels.push(d.split('-')[2]+'日');
+                const daySum = (db.history[d] || []).reduce((s,l)=>s+l.c, 0);
+                vals.push(daySum);
+            }
+            if(chart) chart.destroy();
+            chart = new Chart(document.getElementById('myChart'), {
+                type: 'line',
+                data: { labels, datasets: [{ label:'淨攝取', data:vals, borderColor:'#007AFF', tension:0.3, fill:true, backgroundColor:'rgba(0,122,255,0.1)' }] },
+                options: { responsive:true, maintainAspectRatio:false, scales:{ y:{beginAtZero:true} } }
+            });
         }
 
-        function clearAll() { if(confirm("確定清除紀錄？")) { db.logs = []; save(); } }
+        function checkAlarm() {
+            const now = new Date();
+            const cur = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
+            if(cur === db.tm && (!db.history[getD()] || db.history[getD()].length===0)) {
+                alert("⏰ "+user+"，今天還沒紀錄熱量喔！");
+            }
+        }
     </script>
 </body>
 </html>
